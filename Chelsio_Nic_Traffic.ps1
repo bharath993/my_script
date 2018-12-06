@@ -93,6 +93,35 @@ $i++
 }
 
 
+function port_rx_error_Coal($stats_rx_0){
+$stats_rx_0_Coal = $stats_rx_0 | findstr "CoalPkts"
+write-host "#################################################################################################################" -f Cyan
+echo $stats_rx_0_Coal
+write-host "#################################################################################################################" -f Cyan
+sleep 5
+$i = 8
+while($i -le 100)
+{
+if($stats_rx_0_Coal[$i] -eq "0")
+{
+$c++
+$j =  $i
+if($stats_rx_0_Coal[--$j] -eq $stats_rx_0_Coal[8])
+{
+write-host "CoalPkts increment had failed for the rx queue" -f Red
+exit
+}
+}
+$i++
+}
+write-host "CoalPkts had successfully incremented for all the queues" -f Green
+}
+
+
+
+
+
+
 
 #Master function to check tx_error
 function port_tx_error_check($stats_tx_0){
@@ -103,21 +132,41 @@ port_tx_error_PktDrop $stats_tx_0
 
 }
 
+function port_rx_error_check($stats_rx_0){
+port_rx_error_Coal $stats_rx_0
+}
+
 
 #function to check the port id of the ports using dumpctx
-function dump_ctx_check($input_choice){
+function dump_ctx_check($input_choice,$point){
 if($input_choice -eq 1)
 {
 $ctx = cxgbtool nic0 debug dumpctx | findstr "Port"
 if($ctx[16] -eq "0")
 {
 $stats_tx_0 = cxgbtool nic0 debug qstats txe
+$stats_rx_0 = cxgbtool nic0 debug qstats rxe
+if($point -eq 1)
+{
 port_tx_error_check $stats_tx_0
+}
+elseif($point -eq 2)
+{
+port_rx_error_check $stats_rx_0
+}
 }
 else
 {
 $stats_tx_0 = cxgbtool nic1 debug qstats txe
+$stats_rx_0 = cxgbtool nic1 debug qstats rxe
+if($point -eq 1)
+{
 port_tx_error_check $stats_tx_0
+}
+elseif($point -eq 2)
+{
+port_rx_error_check $stats_rx_0
+}
 }
 }
 if ($input_choice -eq 2){
@@ -125,12 +174,28 @@ $ctx = cxgbtool nic0 debug dumpctx | findstr "Port"
 if($ctx[16] -eq "1")
 {
 $stats_tx_0 = cxgbtool nic0 debug qstats txe
+$stats_rx_0 = cxgbtool nic0 debug qstats rxe
+if($point -eq 1)
+{
 port_tx_error_check $stats_tx_0
+}
+elseif($point -eq 2)
+{
+port_rx_error_check $stats_rx_0
+}
 }
 else
 {
 $stats_tx_0 = cxgbtool nic1 debug qstats txe
+$stats_rx_0 = cxgbtool nic1 debug qstats rxe
+if($point -eq 1)
+{
 port_tx_error_check $stats_tx_0
+}
+elseif($point -eq 2)
+{
+port_rx_error_check $stats_rx_0
+}
 }
 }
 }
@@ -204,7 +269,7 @@ sleep 3
 Write-Host "Starting this machine as tx" -f Yellow
 ntttcp -s -m 32,*,$net_ip_peer -sb 512k -l 64k -t $time_to_run_test_in_seconds
 sleep 3
-dump_ctx_check $input_choice
+dump_ctx_check $input_choice 1
 
 }
 
@@ -218,8 +283,8 @@ Write-Host "Starting this machine as rx" -f Yellow
 Invoke-Command -ComputerName . -ScriptBlock {invoke-expression "$args[0]"} -ArgumentList $dummy  -AsJob
 sleep 3
 write-host "Starting the peer machine as tx" -f Yellow
-Invoke-Command -ComputerName $remote_computer_ip -ScriptBlock {invoke-expression "$args[0]"} -ArgumentList $dummy1  -AsJob
-
+Invoke-Command -ComputerName $remote_computer_ip -ScriptBlock {invoke-expression "$args[0]"} -ArgumentList $dummy1
+dump_ctx_check $input_choice 2
 
 }
 
@@ -275,6 +340,8 @@ exist
 Write-Host "clearing the tx queue of both the ports" -f Yellow
 $garb = cxgbtool nic0 debug qstats txe clr
 $garb1 = cxgbtool nic1 debug qstats txe clr
+$garb_rx = cxgbtool nic0 debug qstats rxe clr
+$garb1_rx = cxgbtool nic1 debug qstats rxe clr
 #Retrive the ip address of the chelsio cards on this machine"
 $net_ip = ipaddress
 #Retrive the ip address of the chelsio cards on peer machine"
