@@ -8,7 +8,7 @@ param(
 [Parameter(Mandatory = $true)][string]$time_to_run_test_in_seconds
 )
 
-#$remote_computer_ip = 10.193.204.30
+
 Set-Item WSMan:\localhost\Client\TrustedHosts * -Force
 
 #function to check the LSO counter of the respective port
@@ -108,13 +108,13 @@ $c++
 $j =  $i
 if($stats_rx_0_Coal[--$j] -eq $stats_rx_0_Coal[8])
 {
-write-host "CoalPkts increment had failed for the rx queue" -f Red
+write-host "CoalPkts increment had failed for the rx queue $c" -f Red
 exit
 }
 }
 $i++
 }
-write-host "CoalPkts had successfully incremented for all the queues" -f Green
+write-host "CoalPkts had successfully incremented for all the  queues" -f Green
 }
 
 
@@ -337,9 +337,10 @@ transmit $net_ip_peer.ipaddress[1]
 #main function
 #test if ntttcp tool exist
 exist
-Write-Host "clearing the tx queue of both the ports" -f Yellow
+Write-Host "clearing the tx queue of the ports" -f Yellow
 $garb = cxgbtool nic0 debug qstats txe clr
 $garb1 = cxgbtool nic1 debug qstats txe clr
+Write-Host "clearing the rx queue of the ports" -f Yellow
 $garb_rx = cxgbtool nic0 debug qstats rxe clr
 $garb1_rx = cxgbtool nic1 debug qstats rxe clr
 #Retrive the ip address of the chelsio cards on this machine"
