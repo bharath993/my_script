@@ -107,7 +107,13 @@ netsh interface ip add address  "port3" $ip4 255.255.255.0 > $nul
 
 function validate($port,$netif_index_port){
 $adapter = Get-NetAdapter -InterfaceDescription "Chel*" 
-$combine = $netif_index_port[16] + $netif_index_port[17] 
+if($netif_index_port[17] -ne $netif_index_port[100]) #add a check to determine if the netif_index_port[17] is null
+{
+$combine = $netif_index_port[16] + $netif_index_port[17]
+}
+else{
+$combine = [string]$netif_index_port[16]
+}
 if($port[16] -eq "0")
 {
 foreach($value in $adapter)
@@ -190,10 +196,14 @@ $netif_index_port3 = cxgbtool nic3 debug dumpctx | findstr "NetIfIdx"
 
 validate $port0 $netif_index_port0
 validate $port1 $netif_index_port1
+if($port2 -ne $null)
+{
 validate $port2 $netif_index_port2
+}
+if($port3 -ne $null)
+{
 validate $port3 $netif_index_port3
-
-
+}
 }
 
 
