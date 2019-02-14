@@ -14,7 +14,7 @@ exit
 
 }
 
-if!(((Get-WindowsFeature -Name hyper-v).installed) -and ((Get-WindowsFeature -Name NetworkVirtualization).installed)){
+if (!(((Get-WindowsFeature -Name hyper-v).installed) -and ((Get-WindowsFeature -Name NetworkVirtualization).installed))){
 
 Write-Host "Hyper-v feature : "(Get-WindowsFeature -Name hyper-v).installed
 Write-Host "Hyper-v feature : "(Get-WindowsFeature -Name NetworkVirtualization).installed
@@ -58,6 +58,13 @@ $j++
 }
 }
 $a  | set-content -Path $content
+
+if($judge -ne 1)
+{
+Write-Host "Copying the $content to the Remote Machine:$remote_ip" -f Yellow
+Copy-Item $content \\$remote_ip\C$\Test -Force
+}
+
 }
 
 
