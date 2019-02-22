@@ -56,6 +56,8 @@ $a | Set-Content $content
 }
 
 
+
+
 function content_edit_vswitch($content){
 write-host "Editing the vswitch name" -f Yellow
 $a[7] = $a[7] | ForEach-Object {$_ -replace "\w+",""}
@@ -99,6 +101,25 @@ write-host "Copied!!" -f Green
 
 
 
+function content_edit_vm_ip($vm_ip,$content,$judge){
+
+$a = Get-Content $content
+
+$j = 1
+if($judge -ne 1){
+$j = 2
+}
+
+for($i = 0 ;$i -lt $no_of_vm/2; $i++)
+{
+$a[4] = $a[4] | ForEach-Object {$_  -replace "IP$($j)`": `"`"","IP$($j)`": `"$($vm_ip[$i])`""}
+$j = $j + 2
+}
+
+$a | Set-Content -Path $content
+}
+
+
 function insert($mac_address){
 $mac_list = New-Object system.collections.arraylist
 foreach($mac in $mac_address){
@@ -129,7 +150,18 @@ $mac_list = insert $macaddress_remote
 content_edit $mac_list $content 2
 }
 
+function get_vm_ip($content){
+$a = Get-Content $content
+$vm_ip = (Get-VMNetworkAdapter *).ipaddresses | Sort-Object
+$vm_ip_remote = Invoke-Command -ComputerName $remote_ip -ScriptBlock {(Get-VMNetworkAdapter *).ipaddresses | Sort-Object} 
 
+$a[4] = $a[4] | ForEach-Object { $_  -replace "\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b",""}
+$a | Set-Content -Path $content
+content_edit_vm_ip $vm_ip $content 1
+sleep 3
+content_edit_vm_ip $vm_ip_remote $content 2
+
+}
 
 
 function select_case
@@ -172,4 +204,5 @@ return $content
 
 basic_setup
 $content = select_case 
+get_vm_ip $content
 get_mac $content
