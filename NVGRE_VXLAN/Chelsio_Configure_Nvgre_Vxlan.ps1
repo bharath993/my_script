@@ -17,7 +17,7 @@ exit
 if (!(((Get-WindowsFeature -Name hyper-v).installed) -and ((Get-WindowsFeature -Name NetworkVirtualization).installed))){
 
 Write-Host "Hyper-v feature : "(Get-WindowsFeature -Name hyper-v).installed
-Write-Host "Hyper-v feature : "(Get-WindowsFeature -Name NetworkVirtualization).installed
+Write-Host "NetworkVirtualization feature : "(Get-WindowsFeature -Name NetworkVirtualization).installed
 Write-Host "Please check which feature is not installed and install it.." -f Red
 exit
 }
@@ -44,6 +44,10 @@ sleep 3
 }
 
 
+
+
+
+
 function remove_mac_file($content){
 
 
@@ -57,6 +61,13 @@ $a | Set-Content $content
 
 
 
+
+function gateway_add($content,$gateway_ip){
+$a = Get-Content $content
+$a[4] = $a[4] | ForEach-Object {$_ -replace "GW`": `"`"","GW`": `"$($gateway_ip)`""}
+$a | Set-Content $content
+
+}
 
 function content_edit_vswitch($content){
 write-host "Editing the vswitch name" -f Yellow
@@ -150,17 +161,31 @@ $mac_list = insert $macaddress_remote
 content_edit $mac_list $content 2
 }
 
+
+
+function GW_replace($content,$gateway_ip){
+$sep = $gateway_ip.LastIndexOf(".")
+$gateway_ip=  $gateway_ip -replace $gateway_ip.substring($sep+1),1
+gateway_add $content $gateway_ip                                   #need to continue from here
+
+
+}
+
+
 function get_vm_ip($content){
 $a = Get-Content $content
 $vm_ip = (Get-VMNetworkAdapter *).ipaddresses | Sort-Object
 $vm_ip_remote = Invoke-Command -ComputerName $remote_ip -ScriptBlock {(Get-VMNetworkAdapter *).ipaddresses | Sort-Object} 
+
+
 
 $a[4] = $a[4] | ForEach-Object { $_  -replace "\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b",""}
 $a | Set-Content -Path $content
 content_edit_vm_ip $vm_ip $content 1
 sleep 3
 content_edit_vm_ip $vm_ip_remote $content 2
-
+sleep 3
+GW_replace $content $vm_ip[0]
 }
 
 
