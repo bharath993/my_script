@@ -14,12 +14,16 @@ exit
 
 }
 
+
+function feature_check {
 if (!(((Get-WindowsFeature -Name hyper-v).installed) -and ((Get-WindowsFeature -Name NetworkVirtualization).installed))){
 
 Write-Host "Hyper-v feature : "(Get-WindowsFeature -Name hyper-v).installed
 Write-Host "NetworkVirtualization feature : "(Get-WindowsFeature -Name NetworkVirtualization).installed
 Write-Host "Please check which feature is not installed and install it.." -f Red
-exit
+return 1
+}
+return 0
 }
 
 
@@ -30,6 +34,15 @@ Set-Item WSMan:\localhost\Client\TrustedHosts * -Force
 
 
 function basic_setup{
+
+$ret = Invoke-Command   -ScriptBlock ${function:feature_check}
+$ret1 = Invoke-Command -ComputerName $remote_ip -ScriptBlock ${function:feature_check}
+
+if(($ret -eq 1) -or ($ret1 -eq 1))
+{
+write-host "Exiting the script" -f Red
+exit
+}
 
 if (!(Test-Path ".\configure_start_vmnetworkadapter.ps1")){
 write-host ".\configure_start_vmnetworkadapter.ps1 is missing!!!,it must be present in the same location as this script" -f Yellow
