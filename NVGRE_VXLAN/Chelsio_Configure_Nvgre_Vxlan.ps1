@@ -34,9 +34,25 @@ Set-Item WSMan:\localhost\Client\TrustedHosts * -Force
 
 
 function basic_setup{
+if(!(Test-Connection -ComputerName $remote_ip -Count 1 -Quiet))
+{
+write-host "Ping to the remote host had failed,exiting the script" -f Red
+exit
+}
 
+write-host "Features check for the local machine" -f Yellow
 $ret = Invoke-Command   -ScriptBlock ${function:feature_check}
+
+if (!($ret)){
+write-host "Features are installed on local machine" -f Green
+}
+
+write-host "Features check for the remote machine" -f Yellow
 $ret1 = Invoke-Command -ComputerName $remote_ip -ScriptBlock ${function:feature_check}
+
+if(!($ret1)){
+write-host "Features are installed on the remote machine" -f Green
+}
 
 if(($ret -eq 1) -or ($ret1 -eq 1))
 {
@@ -179,7 +195,7 @@ content_edit $mac_list $content 2
 function GW_replace($content,$gateway_ip){
 $sep = $gateway_ip.LastIndexOf(".")
 $gateway_ip=  $gateway_ip -replace $gateway_ip.substring($sep+1),1
-gateway_add $content $gateway_ip                                   #need to continue from here
+gateway_add $content $gateway_ip                                   
 
 
 }
